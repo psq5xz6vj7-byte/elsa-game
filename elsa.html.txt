@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Elsa Training</title>
+<style>
+body{margin:0;background:#0b1220;color:white;font-family:sans-serif;text-align:center}
+#game{background:#152040;touch-action:manipulation}
+button{font-size:18px;padding:10px 16px;margin:8px;border-radius:10px;border:none}
+</style>
+</head>
+<body>
+
+<h3>❄️戴冠式エルサ練習モード</h3>
+<canvas id="game" width="360" height="540"></canvas><br>
+<button onclick="skill()">スキル発動</button>
+<div id="score">Score:0</div>
+
+<script>
+const c=document.getElementById("game");
+const ctx=c.getContext("2d");
+let score=0,ice=false;
+
+function draw(){
+ctx.fillStyle=ice?"#8de0ff":"#2c3f8f";
+ctx.fillRect(0,0,c.width,c.height);
+ctx.fillStyle="white";
+ctx.fillText(ice?"氷ループ中❄️":"通常",150,50);
+requestAnimationFrame(draw);
+}
+draw();
+
+c.addEventListener("click",()=>{
+if(ice){
+score+=500000;
+}else{
+score+=100000;
+}
+document.getElementById("score").textContent="Score:"+score;
+});
+
+function skill(){
+ice=true;
+setTimeout(()=>ice=false,5000);
+}
+</script>
+</body>
+</html>
