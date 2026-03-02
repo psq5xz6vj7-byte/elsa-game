@@ -53,8 +53,6 @@ let board = [];
 let dragging = false;
 let path = [];
 let offsetY = 100;
-
-// ぷにぷに用
 let scaleMap = [];
 
 function init() {
@@ -77,16 +75,13 @@ function rand(){
   return Math.floor(Math.random()*COLORS.length);
 }
 
-// 🎨 ぷにぷに描画
 function draw(){
   ctx.clearRect(0,0,canvas.width,canvas.height);
-
   for (let y=0;y<SIZE;y++){
     for (let x=0;x<SIZE;x++){
       const cx = x*TSUM_SIZE+40;
       const cy = y*TSUM_SIZE+offsetY;
 
-      // ぷにぷに戻るアニメ
       scaleMap[y][x] += (1 - scaleMap[y][x]) * 0.2;
 
       ctx.save();
@@ -103,7 +98,6 @@ function draw(){
 }
 setInterval(draw, 16);
 
-// タッチ取得
 function getPos(e){
   const rect = canvas.getBoundingClientRect();
   const t = e.touches[0];
@@ -112,7 +106,6 @@ function getPos(e){
   return {x,y};
 }
 
-// 押した
 canvas.addEventListener("touchstart",e=>{
   dragging=true;
   path=[];
@@ -121,7 +114,6 @@ canvas.addEventListener("touchstart",e=>{
   squash(p);
 });
 
-// なぞり
 canvas.addEventListener("touchmove",e=>{
   if(!dragging)return;
   const p=getPos(e);
@@ -132,7 +124,6 @@ canvas.addEventListener("touchmove",e=>{
   }
 });
 
-// 離した
 canvas.addEventListener("touchend",()=>{
   if(path.length>1){
     for(const p of path){
@@ -144,10 +135,9 @@ canvas.addEventListener("touchend",()=>{
   dragging=false;
 });
 
-// ぷにっ
 function squash(p){
   if(valid(p)){
-    scaleMap[p.y][p.x]=0.7; // 潰れる強さ
+    scaleMap[p.y][p.x]=0.7;
   }
 }
 
