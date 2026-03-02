@@ -1,113 +1,159 @@
 <!DOCTYPE html>
 <html>
-<body style="margin:0;background:#0a1633;">
-<canvas id="game" width="360" height="540"></canvas>
-let path = [];
-let isTouching = false;
-
-canvas.addEventListener("touchstart", e => {
-  path = [];
-  isTouching = true;
-});
-
-canvas.addEventListener("touchmove", e => {
-  if (!isTouching) return;
-  const rect = canvas.getBoundingClientRect();
-  const touch = e.touches[0];
-  const x = Math.floor((touch.clientX - rect.left) / size);
-  const y = Math.floor((touch.clientY - rect.top) / size);
-
-  if (!path.find(p => p.x === x && p.y === y)) {
-    path.push({x, y});
-  }
-});
-
-canvas.addEventListener("touchend", () => {
-  isTouching = false;
-  if (path.length >= 3) {
-    path.forEach(p => grid[p.y][p.x] = null);
-    drop();
-  }
-});
-
-function drop() {
-  for (let x = 0; x < cols; x++) {
-    let stack = [];
-    for (let y = rows - 1; y >= 0; y--) {
-      if (grid[y][x]) stack.push(grid[y][x]);
-    }
-    for (let y = rows - 1; y >= 0; y--) {
-      grid[y][x] = stack[rows - 1 - y] || randomColor();
-    }
-  }
+<head>
+<meta charset="UTF-8">
+<title>戴冠式エルサ本物スキル再現</title>
+<style>
+body{
+  margin:0;
+  background:#071b3b;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  font-family:sans-serif;
+  color:white;
 }
+canvas{ touch-action:none; }
+#top{
+  display:flex;
+  gap:20px;
+  align-items:center;
+  margin:10px;
+}
+#skillBtn{
+  padding:8px 16px;
+  font-size:16px;
+  background:#4fdcff;
+  border:none;
+  border-radius:8px;
+}
+</style>
+</head>
+<body>
+
+<h2>❄️ 戴冠式エルサ 本物スキル再現 ❄️</h2>
+
+<div id="top">
+  <div id="score">Score:0</div>
+  <div id="gauge">Skill:0%</div>
+  <button id="skillBtn">スキル</button>
+</div>
+
+<canvas id="game"></canvas>
+
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
-const size = 60;
-const cols = 6;
-const rows = 8;
+const SIZE = 6;
+const TSUM_SIZE = 50;
+const COLORS = ["#ff6b6b","#ffd166","#6bcB77","#4dabf7","#b197fc"];
 
-let colors = ["#6ec5ff","#ff6e6e","#6effa1","#ffd96e","#c06eff"];
-let grid = [];
-
+let board = [];
 let dragging = false;
-let chain = [];
-let targetColor = null;
+let path = [];
+let offsetY = 100;
 
-function init(){
-  for(let y=0;y<rows;y++){
-    grid[y] = [];
-    for(let x=0;x<cols;x++){
-      grid[y][x] = colors[Math.floor(Math.random()*colors.length)];
+// ぷにぷに用
+let scaleMap = [];
+
+function init() {
+  board = [];
+  scaleMap = [];
+  for (let y=0;y<SIZE;y++){
+    let row=[];
+    let srow=[];
+    for (let x=0;x<SIZE;x++){
+      row.push(rand());
+      srow.push(1);
     }
+    board.push(row);
+    scaleMap.push(srow);
   }
 }
+init();
 
+function rand(){
+  return Math.floor(Math.random()*COLORS.length);
+}
+
+// 🎨 ぷにぷに描画
 function draw(){
-  ctx.clearRect(0,0,360,540);
+  ctx.clearRect(0,0,canvas.width,canvas.height);
 
-  for(let y=0;y<rows;y++){
-    for(let x=0;x<cols;x++){
-      if(!grid[y][x]) continue;
-      ctx.fillStyle = grid[y][x];
+  for (let y=0;y<SIZE;y++){
+    for (let x=0;x<SIZE;x++){
+      const cx = x*TSUM_SIZE+40;
+      const cy = y*TSUM_SIZE+offsetY;
+
+      // ぷにぷに戻るアニメ
+      scaleMap[y][x] += (1 - scaleMap[y][x]) * 0.2;
+
+      ctx.save();
+      ctx.translate(cx, cy);
+      ctx.scale(scaleMap[y][x], scaleMap[y][x]);
+
       ctx.beginPath();
-      ctx.arc(x*size+30,y*size+30,25,0,Math.PI*2);
+      ctx.arc(0,0,20,0,Math.PI*2);
+      ctx.fillStyle = COLORS[board[y][x]];
       ctx.fill();
+      ctx.restore();
     }
   }
 }
+setInterval(draw, 16);
 
-function getCell(e){
+// タッチ取得
+function getPos(e){
   const rect = canvas.getBoundingClientRect();
-  const x = Math.floor((e.touches?e.touches[0].clientX:e.clientX - rect.left)/size);
-  const y = Math.floor((e.touches?e.touches[0].clientY:e.clientY - rect.top)/size);
+  const t = e.touches[0];
+  const x = Math.floor((t.clientX-rect.left-15)/TSUM_SIZE);
+  const y = Math.floor((t.clientY-rect.top-offsetY)/TSUM_SIZE);
   return {x,y};
 }
 
-canvas.addEventListener("mousedown",start);
-canvas.addEventListener("mousemove",move);
-canvas.addEventListener("mouseup",end);
-canvas.addEventListener("touchstart",start);
-canvas.addEventListener("touchmove",move);
-canvas.addEventListener("touchend",end);
+// 押した
+canvas.addEventListener("touchstart",e=>{
+  dragging=true;
+  path=[];
+  const p=getPos(e);
+  path.push(p);
+  squash(p);
+});
 
-function start(e){
-  dragging = true;
-  chain = [];
-  const {x,y} = getCell(e);
-  if(grid[y] && grid[y][x]){
-    targetColor = grid[y][x];
-    chain.push({x,y});
+// なぞり
+canvas.addEventListener("touchmove",e=>{
+  if(!dragging)return;
+  const p=getPos(e);
+  const last=path[path.length-1];
+  if(!last||last.x!==p.x||last.y!==p.y){
+    path.push(p);
+    squash(p);
+  }
+});
+
+// 離した
+canvas.addEventListener("touchend",()=>{
+  if(path.length>1){
+    for(const p of path){
+      if(valid(p)){
+        board[p.y][p.x]=rand();
+      }
+    }
+  }
+  dragging=false;
+});
+
+// ぷにっ
+function squash(p){
+  if(valid(p)){
+    scaleMap[p.y][p.x]=0.7; // 潰れる強さ
   }
 }
 
-function move(e){
-  if(!dragging) return;
-  const {x,y} = getCell(e);
-  if(!grid[y] || !grid[y][x]) return;
-  if(grid[y][x] !== targetColor) return;
-
-  const last = chain[chain.length-1];
-  if(Math.abs(last.x-x)+Math.abs(last.y-y) !==
+function valid(p){
+  return p.x>=0 && p.y>=0 && p.x<SIZE && p.y<SIZE;
+}
+</script>
+</body>
+</html>
