@@ -2,6 +2,45 @@
 <html>
 <body style="margin:0;background:#0a1633;">
 <canvas id="game" width="360" height="540"></canvas>
+let path = [];
+let isTouching = false;
+
+canvas.addEventListener("touchstart", e => {
+  path = [];
+  isTouching = true;
+});
+
+canvas.addEventListener("touchmove", e => {
+  if (!isTouching) return;
+  const rect = canvas.getBoundingClientRect();
+  const touch = e.touches[0];
+  const x = Math.floor((touch.clientX - rect.left) / size);
+  const y = Math.floor((touch.clientY - rect.top) / size);
+
+  if (!path.find(p => p.x === x && p.y === y)) {
+    path.push({x, y});
+  }
+});
+
+canvas.addEventListener("touchend", () => {
+  isTouching = false;
+  if (path.length >= 3) {
+    path.forEach(p => grid[p.y][p.x] = null);
+    drop();
+  }
+});
+
+function drop() {
+  for (let x = 0; x < cols; x++) {
+    let stack = [];
+    for (let y = rows - 1; y >= 0; y--) {
+      if (grid[y][x]) stack.push(grid[y][x]);
+    }
+    for (let y = rows - 1; y >= 0; y--) {
+      grid[y][x] = stack[rows - 1 - y] || randomColor();
+    }
+  }
+}
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
