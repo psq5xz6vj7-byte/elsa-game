@@ -48,6 +48,9 @@ let player={x:180,y:400,size:20};
 let enemies=[];
 let score=0;
 
+let flash = 0;
+let freeze = 0;
+let particles = [];
 function spawn(){
 enemies.push({
 x:Math.random()*340,
@@ -58,8 +61,25 @@ speed:2+Math.random()*2
 
 setInterval(spawn,800);
 
-function skill(){
-score+=50;
+function skill() {
+  score += 50;
+
+  flash = 6;
+  freeze = 40;
+
+  for (let i = 0; i < 40; i++) {
+    particles.push({
+      x: player.x,
+      y: player.y,
+      vx: (Math.random() - 0.5) * 8,
+      vy: (Math.random() - 0.5) * 8,
+      life: 30
+    });
+  }
+
+  if (navigator.vibrate) {
+    navigator.vibrate(120);
+  }
 }
 
 function loop(){
@@ -83,6 +103,31 @@ location.reload();
 
 ctx.fillStyle="white";
 ctx.fillText("Score:"+score,10,20);
+
+// ❄️ フラッシュ
+if (flash > 0) {
+  ctx.fillStyle = "rgba(255,255,255,0.5)";
+  ctx.fillRect(0,0,360,540);
+  flash--;
+}
+
+// 🧊 凍結オーバーレイ
+if (freeze > 0) {
+  ctx.fillStyle = "rgba(100,180,255,0.25)";
+  ctx.fillRect(0,0,360,540);
+  freeze--;
+}
+
+// ✨ パーティクル
+particles.forEach(p => {
+  ctx.fillStyle = "cyan";
+  ctx.fillRect(p.x, p.y, 3, 3);
+  p.x += p.vx;
+  p.y += p.vy;
+  p.life--;
+});
+particles = particles.filter(p => p.life > 0);
+
 requestAnimationFrame(loop);
 }
 
