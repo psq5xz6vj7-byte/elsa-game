@@ -2,7 +2,6 @@
 <html>
 <body style="margin:0;background:#0a1633;">
 <canvas id="game" width="360" height="540"></canvas>
-
 <script>
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
@@ -13,6 +12,10 @@ const rows = 8;
 
 let colors = ["#6ec5ff","#ff6e6e","#6effa1","#ffd96e","#c06eff"];
 let grid = [];
+
+let dragging = false;
+let chain = [];
+let targetColor = null;
 
 function init(){
   for(let y=0;y<rows;y++){
@@ -28,22 +31,44 @@ function draw(){
 
   for(let y=0;y<rows;y++){
     for(let x=0;x<cols;x++){
+      if(!grid[y][x]) continue;
       ctx.fillStyle = grid[y][x];
       ctx.beginPath();
-      ctx.arc(
-        x*size + size/2,
-        y*size + size/2,
-        size/2-5,
-        0,
-        Math.PI*2
-      );
+      ctx.arc(x*size+30,y*size+30,25,0,Math.PI*2);
       ctx.fill();
     }
   }
 }
 
-init();
-draw();
-</script>
-</body>
-</html>
+function getCell(e){
+  const rect = canvas.getBoundingClientRect();
+  const x = Math.floor((e.touches?e.touches[0].clientX:e.clientX - rect.left)/size);
+  const y = Math.floor((e.touches?e.touches[0].clientY:e.clientY - rect.top)/size);
+  return {x,y};
+}
+
+canvas.addEventListener("mousedown",start);
+canvas.addEventListener("mousemove",move);
+canvas.addEventListener("mouseup",end);
+canvas.addEventListener("touchstart",start);
+canvas.addEventListener("touchmove",move);
+canvas.addEventListener("touchend",end);
+
+function start(e){
+  dragging = true;
+  chain = [];
+  const {x,y} = getCell(e);
+  if(grid[y] && grid[y][x]){
+    targetColor = grid[y][x];
+    chain.push({x,y});
+  }
+}
+
+function move(e){
+  if(!dragging) return;
+  const {x,y} = getCell(e);
+  if(!grid[y] || !grid[y][x]) return;
+  if(grid[y][x] !== targetColor) return;
+
+  const last = chain[chain.length-1];
+  if(Math.abs(last.x-x)+Math.abs(last.y-y) !==
